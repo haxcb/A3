@@ -1,0 +1,118 @@
+<!DOCTYPE html> 
+<html> 
+  <head> 
+    <title>Circles</title> 
+        <meta name="Author" content="wimdows (wim)"> 
+    <script type="text/javascript" src="js/d3.min.js"></script> 
+</head> 
+
+<body> 
+	<div id="knoppies"> 
+		<button type="button" 
+			class="buttons" 
+			id="makered" 
+			onmouseover="makeRedorBlue('red')" 
+			value="makethemred">
+			make ´m red
+		</button> 
+		<button type="button" 
+			class="buttons" 
+			id="makeblue" 
+			onmouseover="makeRedorBlue('blue')" 
+			value="makethemblue">
+			make 'm blue
+		</button> 
+		<button type="button" 
+			class="buttons" 
+			id="hidered" 
+			onmouseover="hideRedsorBlues('red')" 
+			value="hidered">
+				hide red
+		</button> 
+		<button type="button" 
+			class="buttons" 
+			id="hideblue" 
+			onmouseover="hideRedsorBlues('blue')" 
+			value="hideblue">
+				hide blue
+		</button> 
+
+		<button type="button" 
+			class="buttons" 
+			id="makeoriginal" 
+			onmouseover="returntoOriginalState()" 
+			value="makethemoriginal">
+				make ´m original
+		</button> 
+
+		<button type="button" 
+			class="buttons" 
+			id="showall" 
+			onmouseover="showAll()" 
+			value="showall">
+				show all
+		</button> 
+
+
+	</div> 
+
+
+<script type="text/javascript"> 
+
+	var data = [ {"color": "blue", "size": 5}, 
+				 {"color": "blue", "size": 10}, 
+				 {"color": "blue", "size": 15}, 
+				 {"color": "red",  "size": 3}, 
+				 {"color": "red",  "size": 2}, 
+				 {"color": "red",  "size": 13}]; 
+
+
+	var w = 600, 
+	h = 300; 
+
+
+	var vis = d3.select("body") 
+	.append("svg:svg") 
+	.attr("width", w) 
+	.attr("height", h); 
+
+
+	var circle = vis.selectAll("circle") 
+	.data(data) 
+	.enter().append("svg:circle") 
+	.attr("class", "my_balls") 
+	.attr("cx", function(d) { return d.size*4; }) 
+	.attr("cy", function(d, i) { return i * 10 + 100; }) 
+	.attr("r", function(d) { return d.size; }) 
+	.style("fill", function(d) { return d.color; }) 
+	.attr("opacity", .5) ; 
+
+
+
+	function makeRedorBlue(z) { 
+
+		vis.selectAll(".my_balls") 
+		.style("fill", z); 
+	} 
+
+	function hideRedsorBlues(z) { 
+		vis.selectAll("circle") 
+		.filter(function(d) { return d.color === z; }) 
+		.attr("display", "none"); 
+	} 
+
+
+	function returntoOriginalState() { 
+
+		vis.selectAll(".my_balls") 
+		.data(data) 
+		.style("fill", function(d) { return d.color; }) 
+	} 
+
+	function showAll() { 
+
+		vis.selectAll("circle") 
+		.attr("display", "yes"); 
+	} 
+</script> 
+</body>
