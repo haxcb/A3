@@ -33,7 +33,7 @@ $(document).ready(function() {
 			nodes.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 		});
 		
-		buildGraph(json.nodes, json.links);
+		
 
 		function buildGraph(filteredNodes, filteredLinks) {
 			force
@@ -52,12 +52,12 @@ $(document).ready(function() {
 				.enter().append("g")
 				.attr("class", "node")
 				.attr("r", 5)
-				.style("fill", function(d, i) { return color(filteredLinks[i].cellTower); })
+				.style("fill", function(d, i) { return color(128); })
 				.call(force.drag);
 					
 			nodes.append("circle")		
 				.attr("r", 5)
-				.style("fill", function(d, i) { return color(filteredLinks[i].cellTower); });		
+				.style("fill", function(d, i) { return color(128); });		
 			
 			var txt = nodes.append("text");
 			txt.attr("dx", 12);
@@ -94,34 +94,75 @@ $(document).ready(function() {
 			
 		}
 		
-		$('select').on('change', function() {
+		d3.select("select").on("change", function(){
+			svg.html('');
+			
 			var drawNodes = [];
 			var drawLinks = [];
 			
 			var selectedNum = $('select').val();
 			
+			drawNodes.push(json.nodes[selectedNum]);
+			
 			for(var i in json.links) {
 				
 				// Check if any links have a matching source to the selection
-				if(json.links[i].source == selectedNum) {				
-					drawNodes.pushIfNotExist(json.nodes[json.links[i].target], function(e) { 
-						return e.id === json.nodes[json.links[i].target].id; 
-					});
+				if(json.links[i].source == selectedNum) {	
+					
+					var found = false;
+					for(var j in drawNodes) {
+						if(drawNodes[j].id === json.nodes[json.links[i].target].id)
+							found = true;
+					}
+					if(!found)
+						drawNodes.push(json.nodes[json.links[i].target]);
+					
+					// drawNodes.pushIfNotExist(json.nodes[json.links[i].target], function(e) { 
+						// return e.id === json.nodes[json.links[i].target].id; 
+					// });
+					
 					drawLinks.push(json.links[i]);
 				
 				// Check if any links have a matching target to the selection
 				} else if(json.links[i].target == selectedNum) {
-					drawNodes.pushIfNotExist(json.nodes[json.links[i].source], function(e) { 
-						return e.id === json.nodes[json.links[i].source].id; 
-					});
+				
+					var found = false;
+					for(var j in drawNodes) {
+						if(drawNodes[j].id === json.nodes[json.links[i].source].id)
+							found = true;
+					}
+					if(!found)
+						drawNodes.push(json.nodes[json.links[i].source]);
+				
+					// drawNodes.pushIfNotExist(json.nodes[json.links[i].source], function(e) { 
+						// return e.id === json.nodes[json.links[i].source].id; 
+					// });
+					
 					drawLinks.push(json.links[i]);
 				}
+				var n = '';
+				if(drawNodes[drawNodes.length-1])
+					n = drawNodes[drawNodes.length-1].id;
+				var s = '';
+				if(drawLinks[drawLinks.length-1])
+					s = drawLinks[drawLinks.length-1].source;
+				var t = '';
+				if(drawLinks[drawLinks.length-1]) 
+					t = drawLinks[drawLinks.length-1].target;
+				// console.log('Last added node: ' + n + ' | ' + s + " --> " + t + ' | ' + json.links[i].source + " --> " + json.links[i].target + ' ');
 			}
 			
-			// drawNodes = drawNodes.slice(0, drawNodes.length-3);
-			// drawLinks = drawLinks.slice(0, drawLinks.length-3);
-			
-			// buildGraph(json.nodes, json.links);
+			for(var i in drawNodes) {
+				console.log(drawNodes[i].id);
+			}
+			for(var i in drawLinks) {
+				console.log(drawLinks[i].source + " --> " + drawLinks[i].target);
+			}
+
+			console.log(drawNodes);
+			console.log(json.nodes);
+			buildGraph(drawNodes, drawLinks);
+			// buildGraph([{'id':0}, {'id':1}], [{'source':1, 'target':0}]);
 			
 			
 			// RESET
@@ -152,7 +193,7 @@ $(document).ready(function() {
 				})
 				.attr("display", "none");
 				
-			console.log(joinedNodes);	
+			// console.log(joinedNodes);	
 				
 			// Filter out irrelevant circles
 			nodes.selectAll("circle")
@@ -176,18 +217,18 @@ $(document).ready(function() {
 		});
 		
 		
-		Array.prototype.inArray = function(comparer) { 
-			for(var i=0; i < this.length; i++) { 
-				if(comparer(this[i])) return true; 
-			}
-			return false; 
-		}; 
+		// Array.prototype.inArray = function(comparer) { 
+			// for(var i=0; i < this.length; i++) { 
+				// if(comparer(this[i])) return true; 
+			// }
+			// return false; 
+		// }; 
 		
-		Array.prototype.pushIfNotExist = function(element, comparer) { 
-			if (!this.inArray(comparer)) {
-				this.push(element);
-			}
-		};		
+		// Array.prototype.pushIfNotExist = function(element, comparer) { 
+			// if (!this.inArray(comparer)) {
+				// this.push(element);
+			// }
+		// };		
 		
 		function dragEndHandler() {
 			console.log("ENDED");
