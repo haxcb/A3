@@ -74,24 +74,6 @@ $(document).ready(function() {
 			var selectedCircle = selectedNode.select("circle");
 			selectedCircle.style("fill", "red");
 			// console.log("SELECTED:  " + filteredNodes[i].id);
-
-			
-			
-			// nodes = nodes.filter(function(d2, i2) {
-				// console.log(i2 + " " + json.links[i2].source.id);
-				// return {};
-				// if(json.links[i2].source.id == json.nodes[i].id 
-					// || json.links[i2].target.id == json.nodes[i].id) {
-					// return d2;
-				// }
-			// });	
-			
-			// links = links.filter(function(d2, i2) {
-				// return {};
-			// });
-			
-			// buildGraph();
-			
 		}
 		
 		d3.select("select").on("change", function(){
@@ -140,31 +122,13 @@ $(document).ready(function() {
 					
 					drawLinks.push(json.links[i]);
 				}
-				var n = '';
-				if(drawNodes[drawNodes.length-1])
-					n = drawNodes[drawNodes.length-1].id;
-				var s = '';
-				if(drawLinks[drawLinks.length-1])
-					s = drawLinks[drawLinks.length-1].source;
-				var t = '';
-				if(drawLinks[drawLinks.length-1]) 
-					t = drawLinks[drawLinks.length-1].target;
-				// console.log('Last added node: ' + n + ' | ' + s + " --> " + t + ' | ' + json.links[i].source + " --> " + json.links[i].target + ' ');
 			}
 			
-			for(var i in drawNodes) {
-				console.log(drawNodes[i].id);
-			}
-			for(var i in drawLinks) {
-				console.log(drawLinks[i].source + " --> " + drawLinks[i].target);
-			}
-
+			
 			console.log(drawNodes);
-			console.log(json.nodes);
-			buildGraph(drawNodes, drawLinks);
-			// buildGraph([{'id':0}, {'id':1}], [{'source':1, 'target':0}]);
+			buildGraph(json.nodes, drawLinks);
 			
-			
+			/*
 			// RESET
 			nodes.selectAll("circle")
 				.attr("display", "true")
@@ -213,6 +177,7 @@ $(document).ready(function() {
 			svg.selectAll("line")
 				.filter(function(d) { return d.source.id != selectedNum && d.target.id != selectedNum })
 				.attr("display", "none");
+				*/
 			
 		});
 		
