@@ -1,6 +1,7 @@
-$(document).ready(function() {
+
 	var width = 960,
-		height = 800;
+		height = 800,
+		radius = 5;
 
 	var color = d3.scale.category20();
 
@@ -19,26 +20,17 @@ $(document).ready(function() {
 		for(var i in json.nodes) {
 			opts += '<option value="' + i + '">' + i + '</option>';
 		}
-		$('.numbers').html(opts);
+		d3.select('.numbers').html(opts);
 		
 		var links = {};
 		var nodes = {};
-
-
-		force.on("tick", function() {
-			links.attr("x1", function(d) { return d.source.x; })
-				.attr("y1", function(d) { return d.source.y; })
-				.attr("x2", function(d) { return d.target.x; })
-				.attr("y2", function(d) { return d.target.y; });
-			nodes.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
-		});
-		
-		
+				
 
 		function buildGraph(filteredNodes, filteredLinks) {
 			force
 				.nodes(filteredNodes)
 				.links(filteredLinks)
+				.on("tick", tick)
 				.start();
 
 			links = svg.selectAll(".link")
@@ -51,13 +43,23 @@ $(document).ready(function() {
 				.data(filteredNodes)
 				.enter().append("g")
 				.attr("class", "node")
-				.attr("r", 5)
+				.attr("r", radius)
 				.style("fill", function(d, i) { return color(128); })
 				.call(force.drag);
 					
 			nodes.append("circle")		
-				.attr("r", 5)
+				.attr("r", radius)
 				.style("fill", function(d, i) { return color(128); });		
+				
+			
+			var slider = d3.select('.slider');
+
+			var slideSettings = d3.slider().axis(true);
+			slideSettings.on("slide", function(evt, value) {
+				console.log(value);
+			});
+				
+			slider.call(slideSettings);
 			
 			var txt = nodes.append("text");
 			txt.attr("dx", 12);
@@ -66,6 +68,17 @@ $(document).ready(function() {
 			
 			nodes.on('click', clickHandler);
 			d3.behavior.drag().on('dragend', dragEndHandler);
+			
+			function tick() {
+				links.attr("x1", function(d) { return d.source.x; })
+					.attr("y1", function(d) { return d.source.y; })
+					.attr("x2", function(d) { return d.target.x; })
+					.attr("y2", function(d) { return d.target.y; });
+					
+				nodes.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+					.attr("cx", function(d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
+					.attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
+		}
 			
 		}
 			
@@ -76,13 +89,14 @@ $(document).ready(function() {
 			// console.log("SELECTED:  " + filteredNodes[i].id);
 		}
 		
+		
 		d3.select("select").on("change", function(){
 			svg.html('');
 			
-			var drawNodes = [];
-			var drawLinks = [];
+			var drawNodes = []; // Keep track of the currently visible & connected nodes
+			var drawLinks = []; // Keep track of currently visible & connected links
 			
-			var selectedNum = $('select').val();
+			var selectedNum = d3.event.target.value;
 			
 			drawNodes.push(json.nodes[selectedNum]);
 			
@@ -91,112 +105,53 @@ $(document).ready(function() {
 				// Check if any links have a matching source to the selection
 				if(json.links[i].source == selectedNum) {	
 					
-					var found = false;
-					for(var j in drawNodes) {
-						if(drawNodes[j].id === json.nodes[json.links[i].target].id)
-							found = true;
-					}
-					if(!found)
-						drawNodes.push(json.nodes[json.links[i].target]);
-					
-					// drawNodes.pushIfNotExist(json.nodes[json.links[i].target], function(e) { 
-						// return e.id === json.nodes[json.links[i].target].id; 
-					// });
+					drawNodes.pushIfNotExist(json.nodes[json.links[i].target], function(e) { 
+						return e.id === json.nodes[json.links[i].target].id; 
+					});
 					
 					drawLinks.push(json.links[i]);
 				
 				// Check if any links have a matching target to the selection
 				} else if(json.links[i].target == selectedNum) {
-				
-					var found = false;
-					for(var j in drawNodes) {
-						if(drawNodes[j].id === json.nodes[json.links[i].source].id)
-							found = true;
-					}
-					if(!found)
-						drawNodes.push(json.nodes[json.links[i].source]);
-				
-					// drawNodes.pushIfNotExist(json.nodes[json.links[i].source], function(e) { 
-						// return e.id === json.nodes[json.links[i].source].id; 
-					// });
+							
+					drawNodes.pushIfNotExist(json.nodes[json.links[i].source], function(e) { 
+						return e.id === json.nodes[json.links[i].source].id; 
+					});
 					
 					drawLinks.push(json.links[i]);
 				}
 			}
 			
-			
-			console.log(drawNodes);
-			buildGraph(json.nodes, drawLinks);
-			
-			/*
-			// RESET
-			nodes.selectAll("circle")
-				.attr("display", "true")
-			nodes.selectAll("text") 
-				.attr("display", "true"); 
-				
-			svg.selectAll("line")
-				.attr("display", "true");
-		
-			// FILTER
-				
-			// Keep track of nodes that are connected to the selected node
-			var joinedNodes = [parseInt(selectedNum)];
-			
-			// Filter out irrelevant lines
-			svg.selectAll("line")
-				.filter(function(d) { 
-					if(d.source.id != selectedNum && d.target.id != selectedNum) {
-						return true;
-					} else if(d.source.id == selectedNum) {
-						joinedNodes.push(d.target.id);
-					} else if(d.target.id == selectedNum) {
-						joinedNodes.push(d.source.id);
-					}
-					return false;
-				})
-				.attr("display", "none");
-				
-			// console.log(joinedNodes);	
-				
-			// Filter out irrelevant circles
-			nodes.selectAll("circle")
-				.filter(function(d) {
-					return jQuery.inArray(d.id, joinedNodes) == -1;
-				})
-				.attr("display", "none");
-				
-			// Filter out irrelevant text
-			nodes.selectAll("text") 
-				.filter(function(d) {
-					return jQuery.inArray(d.id, joinedNodes) == -1 && d.id != selectedNum;
-				})
-				.attr("display", "none"); 
-			
-			// Filter out irrelevant lines
-			svg.selectAll("line")
-				.filter(function(d) { return d.source.id != selectedNum && d.target.id != selectedNum })
-				.attr("display", "none");
-				*/
+			var remappedLinks = [];
+
+			drawLinks.forEach(function(e) { 
+				// Get the source and target nodes
+				var sourceNode = drawNodes.filter(function(n) { return n.id === e.source; })[0],
+					targetNode = drawNodes.filter(function(n) { return n.id === e.target; })[0];
+
+				// Add the edge to the array
+				remappedLinks.push({'source': sourceNode, 'target': targetNode, 'cellTower':e.cellTower, 'duration':e.duration, 'time':e.time});
+			});
+
+			buildGraph(drawNodes, remappedLinks);
 			
 		});
 		
 		
-		// Array.prototype.inArray = function(comparer) { 
-			// for(var i=0; i < this.length; i++) { 
-				// if(comparer(this[i])) return true; 
-			// }
-			// return false; 
-		// }; 
+		Array.prototype.inArray = function(comparer) { 
+			for(var i=0; i < this.length; i++) { 
+				if(comparer(this[i])) return true; 
+			}
+			return false; 
+		}; 
 		
-		// Array.prototype.pushIfNotExist = function(element, comparer) { 
-			// if (!this.inArray(comparer)) {
-				// this.push(element);
-			// }
-		// };		
+		Array.prototype.pushIfNotExist = function(element, comparer) { 
+			if (!this.inArray(comparer)) {
+				this.push(element);
+			}
+		};		
 		
 		function dragEndHandler() {
 			console.log("ENDED");
 		}
 	});
-});
