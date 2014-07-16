@@ -1,6 +1,6 @@
 
-	var width = 960,
-		height = 800,
+	var width = 800,
+		height = 500,
 		radius = 5;
 
 	var color = d3.scale.category20();
@@ -10,7 +10,7 @@
 		.linkDistance(50)
 		.size([width, height]);
 
-	var svg = d3.select("body").append("svg")
+	var svg = d3.select(".container").append("svg")
 		.attr("width", width)
 		.attr("height", height);
 
@@ -24,7 +24,15 @@
 		
 		var links = {};
 		var nodes = {};
+			
+		var slider = d3.select('.slider');
+
+		var slideSettings = d3.slider();
+		slideSettings.on("slide", function(evt, value) {
+			console.log(value);
+		});
 				
+		slider.call(slideSettings);
 
 		function buildGraph(filteredNodes, filteredLinks) {
 			force
@@ -49,17 +57,7 @@
 					
 			nodes.append("circle")		
 				.attr("r", radius)
-				.style("fill", function(d, i) { return color(128); });		
-				
-			
-			var slider = d3.select('.slider');
-
-			var slideSettings = d3.slider().axis(true);
-			slideSettings.on("slide", function(evt, value) {
-				console.log(value);
-			});
-				
-			slider.call(slideSettings);
+				.style("fill", function(d, i) { return color(128); });					
 			
 			var txt = nodes.append("text");
 			txt.attr("dx", 12);
@@ -109,7 +107,8 @@
 						return e.id === json.nodes[json.links[i].target].id; 
 					});
 					
-					drawLinks.push(json.links[i]);
+					drawLinks = getDrawableLinks(drawLinks);
+					
 				
 				// Check if any links have a matching target to the selection
 				} else if(json.links[i].target == selectedNum) {
@@ -117,10 +116,34 @@
 					drawNodes.pushIfNotExist(json.nodes[json.links[i].source], function(e) { 
 						return e.id === json.nodes[json.links[i].source].id; 
 					});
-					
-					drawLinks.push(json.links[i]);
+					drawLinks = getDrawableLinks(drawLinks);
 				}
 			}
+			
+			// When 11 to 10 is undefined for count
+			function getDrawableLinks(dLinks) {
+				dLinks.pushIfNotExist(json.links[i], function(e) {
+					if((e.source === json.links[i].source && e.target === json.links[i].target)
+						|| (e.source === json.links[i].target && e.target === json.links[i].source)) {
+							if(e.hasOwnProperty('count')) {
+								console.log(dLinks.length + "count++");
+								e.count++;
+							} else {
+								console.log(dLinks.length + "count init");
+								e.count = 1;
+							}
+							return true;
+					}
+					return false;
+				});	
+				return dLinks;
+			}
+			
+			for(var i in drawLinks) {
+				console.log(i + " " + drawLinks[i].source + " <--> " + drawLinks[i].target + " | " + drawLinks[i].count);
+			}
+			// console.log(drawNodes.length);
+			// console.log(drawLinks.length);
 			
 			var remappedLinks = [];
 
