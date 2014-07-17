@@ -1,15 +1,37 @@
 * {
 	margin:0;
 	padding:0;
+	font-family: 'Open Sans', sans-serif;
+	font-weight:100;
 }
 
 .container {
 	width:800px;
-	margin:0 auto;
+	margin:10px auto 0 auto;
+}
+
+.container > svg {
+	border:1px solid #DEDEDE;
+}
+
+h1 {
+	font-weight:100;
+	text-align:center;
+}
+
+.callLabel,
+.numLabel {
+	display:block;
+	margin:10px 0;
+	text-align:center;
+
 }
 
 select {
 	display:block;
+	margin-top:10px;
+	margin:0 auto 20px auto;
+	width:150px;
 }
 
 input {
@@ -22,11 +44,20 @@ input {
 
 .node text {
 	pointer-events: none;
-	font: 10px sans-serif;
+	font: 11px sans-serif;
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
 	-khtml-user-select: none;
 	-moz-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
+}
+
+.slider  {
+	margin-bottom:50px;
+}
+
+.d3-slider-handle {
+	background:#FFB8C4;
+	border:1px solid #FF526F;
 }

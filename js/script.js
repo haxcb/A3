@@ -1,180 +1,279 @@
+var width = 800,
+	height = 500,
+	radius = 5;
 
-	var width = 800,
-		height = 500,
-		radius = 5;
+var white = d3.rgb(255, 255, 255);
+var pink = d3.rgb(255, 145, 165);
+var gray = d3.rgb(222, 222, 222);
 
-	var color = d3.scale.category20();
+var force = d3.layout.force()
+	.charge(-500)
+	.linkDistance(50)
+	.size([width, height]);
 
-	var force = d3.layout.force()
-		.charge(-500)
-		.linkDistance(50)
-		.size([width, height]);
-
-	var svg = d3.select(".container").append("svg")
-		.attr("width", width)
-		.attr("height", height);
-
+var svg = d3.select(".container").append("svg")
+	.attr("width", width)
+	.attr("height", height);
 		
-	d3.json("../data/cell.json", function(error, json) {
-		var opts = '';
-		for(var i in json.nodes) {
-			opts += '<option value="' + i + '">' + i + '</option>';
-		}
-		d3.select('.numbers').html(opts);
-		
-		var links = {};
-		var nodes = {};
-			
-		var slider = d3.select('.slider');
+var dataNodes = [],
+	dataLinks = [],
+	displayedNodes = [],
+	displayedLinks = [];
+	
+var selectedNum;
+	
+d3.json("../data/cell.json", function(error, json) {
 
-		var slideSettings = d3.slider();
-		slideSettings.on("slide", function(evt, value) {
-			console.log(value);
-		});
-				
+	dataNodes = json.nodes;
+	dataLinks = json.links;
+	
+	populateDropdown(dataNodes);
+	resetSlider(0, 0);	
+	d3.select("select").on("change", handleSelectedNumber); 
+	
+});
+
+function populateDropdown(vals) {
+	var opts = '';
+	for(var i in dataNodes) {
+		opts += '<option value="' + i + '">' + i + '</option>';
+	}
+	d3.select('.numbers').html(opts);
+}
+
+function handleSelectedNumber() {
+	selectedNum = d3.event.target.value;
+	rebuildNodes();
+}
+
+function resetSlider(min, max) {
+	var slider = d3.select('.slider');
+	var label = d3.select('.callLabel');
+	slider.html('');
+	if(min === max) {
+		label.style("display", "none");
+		slider.attr("display", "none");
+	} else {
+		slider.attr("display", "true");
+		label.style('display', 'block');
+		var slideScale = d3.scale.linear()
+			.domain([min, max]);
+		
+		var slideSettings = d3.slider().axis(true)
+			.scale(slideScale)	
+			.on("slide", handleSlider);
+		
 		slider.call(slideSettings);
+	}
+}
 
-		function buildGraph(filteredNodes, filteredLinks) {
-			force
-				.nodes(filteredNodes)
-				.links(filteredLinks)
-				.on("tick", tick)
-				.start();
-
-			links = svg.selectAll(".link")
-				.data(filteredLinks)
-				.enter().append("line")
-				.attr("class", "link")
-				.style("stroke-width", function(d) { return Math.sqrt(d.value); });
-
-			nodes = svg.selectAll(".node")
-				.data(filteredNodes)
-				.enter().append("g")
-				.attr("class", "node")
-				.attr("r", radius)
-				.style("fill", function(d, i) { return color(128); })
-				.call(force.drag);
-					
-			nodes.append("circle")		
-				.attr("r", radius)
-				.style("fill", function(d, i) { return color(128); });					
-			
-			var txt = nodes.append("text");
-			txt.attr("dx", 12);
-			txt.attr("dy", ".35em");
-			txt.text(function(d) {return d.id});
-			
-			nodes.on('click', clickHandler);
-			d3.behavior.drag().on('dragend', dragEndHandler);
-			
-			function tick() {
-				links.attr("x1", function(d) { return d.source.x; })
-					.attr("y1", function(d) { return d.source.y; })
-					.attr("x2", function(d) { return d.target.x; })
-					.attr("y2", function(d) { return d.target.y; });
-					
-				nodes.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
-					.attr("cx", function(d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
-					.attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
+function handleSlider(e, value) {
+	svg.html('');
+	var filteredCallLinks = [];
+	var filteredNodeLinks = [];
+	var hiddenNodes = [];
+	
+	for(var i in displayedLinks) {
+		// Show nodes above the threshold value
+		if(displayedLinks[i].count >= value) {
+			filteredCallLinks.push(displayedLinks[i]);
+		} else {
+			// Get all nodes that should be hidden
+			var hideNode = -1;
+			if(selectedNum == displayedLinks[i].target.id) {
+				hideNode = findNodeIndex(displayedLinks[i].source, displayedNodes);
+			} else if(selectedNum == displayedLinks[i].source.id) {
+				hideNode = findNodeIndex(displayedLinks[i].target, displayedNodes);
+			}
+			if(hideNode > -1) {
+				hiddenNodes.push(displayedNodes[hideNode]);
+			}
 		}
-			
-		}
-			
-		function clickHandler(d, i) {
-			var selectedNode = d3.select(nodes[0][i]);
-			var selectedCircle = selectedNode.select("circle");
-			selectedCircle.style("fill", "red");
-			// console.log("SELECTED:  " + filteredNodes[i].id);
-		}
-		
-		
-		d3.select("select").on("change", function(){
-			svg.html('');
-			
-			var drawNodes = []; // Keep track of the currently visible & connected nodes
-			var drawLinks = []; // Keep track of currently visible & connected links
-			
-			var selectedNum = d3.event.target.value;
-			
-			drawNodes.push(json.nodes[selectedNum]);
-			
-			for(var i in json.links) {
-				
-				// Check if any links have a matching source to the selection
-				if(json.links[i].source == selectedNum) {	
-					
-					drawNodes.pushIfNotExist(json.nodes[json.links[i].target], function(e) { 
-						return e.id === json.nodes[json.links[i].target].id; 
-					});
-					
-					drawLinks = getDrawableLinks(drawLinks);
-					
-				
-				// Check if any links have a matching target to the selection
-				} else if(json.links[i].target == selectedNum) {
-							
-					drawNodes.pushIfNotExist(json.nodes[json.links[i].source], function(e) { 
-						return e.id === json.nodes[json.links[i].source].id; 
-					});
-					drawLinks = getDrawableLinks(drawLinks);
-				}
-			}
-			
-			// When 11 to 10 is undefined for count
-			function getDrawableLinks(dLinks) {
-				dLinks.pushIfNotExist(json.links[i], function(e) {
-					if((e.source === json.links[i].source && e.target === json.links[i].target)
-						|| (e.source === json.links[i].target && e.target === json.links[i].source)) {
-							if(e.hasOwnProperty('count')) {
-								console.log(dLinks.length + "count++");
-								e.count++;
-							} else {
-								console.log(dLinks.length + "count init");
-								e.count = 1;
-							}
-							return true;
-					}
-					return false;
-				});	
-				return dLinks;
-			}
-			
-			for(var i in drawLinks) {
-				console.log(i + " " + drawLinks[i].source + " <--> " + drawLinks[i].target + " | " + drawLinks[i].count);
-			}
-			// console.log(drawNodes.length);
-			// console.log(drawLinks.length);
-			
-			var remappedLinks = [];
+	}
+	
+	buildGraph(displayedNodes, filteredCallLinks, hiddenNodes);
+}
 
-			drawLinks.forEach(function(e) { 
-				// Get the source and target nodes
-				var sourceNode = drawNodes.filter(function(n) { return n.id === e.source; })[0],
-					targetNode = drawNodes.filter(function(n) { return n.id === e.target; })[0];
-
-				// Add the edge to the array
-				remappedLinks.push({'source': sourceNode, 'target': targetNode, 'cellTower':e.cellTower, 'duration':e.duration, 'time':e.time});
-			});
-
-			buildGraph(drawNodes, remappedLinks);
-			
-		});
+function rebuildNodes() {
+	var drawNodes = []; // Keep track of the currently visible & connected nodes
+	var drawLinks = []; // Keep track of currently visible & connected links
+	
+	drawNodes.push(dataNodes[selectedNum]);
+	
+	for(var i in dataLinks) {							
+		if(dataLinks[i].source == selectedNum) {	
+			// Check if any links have a matching source to the selection
+			drawNodes = getDrawableNodes(drawNodes, dataNodes[dataLinks[i].target]);
+			drawLinks = getDrawableLinks(drawLinks, dataLinks[i]);				
 		
 		
-		Array.prototype.inArray = function(comparer) { 
-			for(var i=0; i < this.length; i++) { 
-				if(comparer(this[i])) return true; 
-			}
-			return false; 
-		}; 
-		
-		Array.prototype.pushIfNotExist = function(element, comparer) { 
-			if (!this.inArray(comparer)) {
-				this.push(element);
-			}
-		};		
-		
-		function dragEndHandler() {
-			console.log("ENDED");
+		} else if(dataLinks[i].target == selectedNum) {		
+			// Check if any links have a matching target to the selection				
+			drawNodes = getDrawableNodes(drawNodes, dataNodes[dataLinks[i].source]);
+			drawLinks = getDrawableLinks(drawLinks, dataLinks[i]);
 		}
-	});
+	}
+	
+	var remappedLinks = [];
+	var highestNode = drawLinks[0];
+	// Remap the links with the correct indices
+	for(var i in drawLinks) {
+		// Get the source and target nodes
+		var sourceNode = drawNodes.filter(function(n) { return n.id === drawLinks[i].source; })[0],
+			targetNode = drawNodes.filter(function(n) { return n.id === drawLinks[i].target; })[0];
+		
+		// Add the edge to the array
+		remappedLinks.push({'source': sourceNode, 
+							'target': targetNode, 
+							'count': drawLinks[i].count,
+							'cellTower':drawLinks[i].cellTower, 
+							'duration':drawLinks[i].duration, 
+							'time':drawLinks[i].time});
+		if(drawLinks[i].count > highestNode.count) {
+			highestNode = drawLinks[i];
+		}
+	}
+	
+	// Redraw graph with new values
+	svg.html('');
+	resetSlider(0, highestNode.count);
+	
+	displayedNodes = drawNodes;
+	displayedLinks = remappedLinks;
+	
+	buildGraph(drawNodes, remappedLinks, []);	
+}
+
+function buildGraph(filteredNodes, filteredLinks, hiddenNodes) {
+	var links = {};
+	var nodes = {};
+	
+	force
+		.nodes(filteredNodes)
+		.links(filteredLinks)
+		.on("tick", tick)
+		.start();
+
+	links = svg.selectAll(".link")
+		.data(filteredLinks)
+		.enter().append("line")
+		.attr("class", "link")
+		.style("stroke-width", function(d) { return Math.sqrt(d.value); });
+
+	nodes = svg.selectAll(".node")
+		.data(filteredNodes)
+		.enter().append("g")
+		.attr("class", "node")
+		.attr("r", radius)
+		.call(force.drag);
+			
+	nodes.append("circle")		
+		.attr("r", radius)
+		.style("fill", pink);
+	
+	nodes.append("text")
+		.attr("dx", 12)
+		.attr("dy", ".35em")
+		.text(function(d) {return d.id});
+		
+	// Format text of central node
+	nodes.selectAll("text")
+		.filter(function(node, index) {
+			return node.id == selectedNum;
+		})
+		.style("text-anchor", 'middle')
+		.attr("dx", 0);
+	
+	// Format circle of central node
+	nodes.selectAll("circle")
+		.filter(function(node, index) {
+			return node.id == selectedNum;
+		})
+		.attr("r", radius*3)
+		.style('stroke', pink)
+		.style("stroke-width", 3)
+		.style("fill", white);
+
+	// Hide text of hidden nodes
+	nodes.selectAll("text")
+		.filter(function(node, index) {
+			return findNodeIndex(node, hiddenNodes) > -1;
+		})
+		.style("fill", "gray")
+		.attr("display", "none");
+	
+	// Hide circles of hidden nodes
+	nodes.selectAll("circle")
+		.filter(function(node, index) {
+			return findNodeIndex(node, hiddenNodes) > -1;
+		})
+		.style("fill", gray)
+		.attr("display", "none");
+		
+	nodes.on("click", clickHandler);
+	
+	function tick() {
+		links.attr("x1", function(d) { return d.source.x; })
+			.attr("y1", function(d) { return d.source.y; })
+			.attr("x2", function(d) { return d.target.x; })
+			.attr("y2", function(d) { return d.target.y; });
+			
+		nodes.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+			.attr("cx", function(d) { return d.x = Math.max(radius*2, Math.min(width - radius*2, d.x)); })
+			.attr("cy", function(d) { return d.y = Math.max(radius*2, Math.min(height - radius*2, d.y)); });
+	}	
+}
+
+function clickHandler(d, i) {
+	if(selectedNum != d.id) {
+		selectedNum = d.id;
+		rebuildNodes();
+	}
+}	
+
+function getDrawableNodes(dNodes, currentNode) {
+	if(dNodes.length < 0) {
+		dNodes.push(currentNode);
+	} else {
+		for(var i in dNodes) {
+			if(dNodes[i].id === currentNode.id) {
+				return dNodes;
+			}
+		}
+		dNodes.push(currentNode);
+	}
+	return dNodes;
+}
+
+function getDrawableLinks(dLinks, currentLink) {			
+	if(dLinks.length < 0) {
+		dLinks.push(currentLink);
+		dLinks[0].count = 1;
+	} else {			
+		// Loop through links and determine if there are repeats
+		for(var i in dLinks) {
+			if((dLinks[i].source === currentLink.source && dLinks[i].target === currentLink.target)
+				|| (dLinks[i].source === currentLink.target && dLinks[i].target === currentLink.source)) {	
+					// The currentLink is a repeat, so increment the count and exit
+					dLinks[i].count++;
+					return dLinks;
+			} 
+		}	
+		// The currentLink is unique, so add to the list and initialize the count
+		dLinks.push(currentLink);
+		dLinks[dLinks.length-1].count = 1;
+	}
+	
+	return dLinks;
+}	
+
+
+// Determine whether the node is in the given array
+function findNodeIndex(node, nodes) {
+	for(var i in nodes) {
+		if(nodes[i].id === node.id) {
+			return i;
+		}
+	}
+	return -1;
+}
