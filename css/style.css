@@ -27,6 +27,22 @@ h1 {
 
 }
 
+button {
+	background:#FFA3A3;
+	border:1px solid red;
+	border-radius:5px;
+	padding:5px 10px;
+	width:150px;
+	margin:15px auto;
+	display:block;
+	color:#fff;
+	font-size:16px;
+}
+
+button:active {
+	background:#FFC2C2;
+}
+
 select {
 	display:block;
 	margin-top:10px;

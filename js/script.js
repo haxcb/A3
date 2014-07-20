@@ -18,7 +18,8 @@ var svg = d3.select(".container").append("svg")
 var dataNodes = [],
 	dataLinks = [],
 	displayedNodes = [],
-	displayedLinks = [];
+	displayedLinks = [],
+	allFilteredLinks = [];
 	
 var selectedNum;
 	
@@ -69,14 +70,14 @@ function resetSlider(min, max) {
 
 function handleSlider(e, value) {
 	svg.html('');
-	var filteredCallLinks = [];
+	var filteredCallFilteredLinks = [];
 	var filteredNodeLinks = [];
 	var hiddenNodes = [];
 	
 	for(var i in displayedLinks) {
 		// Show nodes above the threshold value
 		if(displayedLinks[i].count >= value) {
-			filteredCallLinks.push(displayedLinks[i]);
+			filteredCallFilteredLinks.push(displayedLinks[i]);
 		} else {
 			// Get all nodes that should be hidden
 			var hideNode = -1;
@@ -91,12 +92,13 @@ function handleSlider(e, value) {
 		}
 	}
 	
-	buildGraph(displayedNodes, filteredCallLinks, hiddenNodes);
+	buildGraph(displayedNodes, filteredCallFilteredLinks, hiddenNodes);
 }
 
 function rebuildNodes() {
 	var drawNodes = []; // Keep track of the currently visible & connected nodes
-	var drawLinks = []; // Keep track of currently visible & connected links
+	var drawLinks = []; // Keep track of currently visible & connected links (no repeats)
+	allFilteredLinks = []; // Keep track of currently visible & connected calls (repeats included)
 	
 	drawNodes.push(dataNodes[selectedNum]);
 	
@@ -105,12 +107,13 @@ function rebuildNodes() {
 			// Check if any links have a matching source to the selection
 			drawNodes = getDrawableNodes(drawNodes, dataNodes[dataLinks[i].target]);
 			drawLinks = getDrawableLinks(drawLinks, dataLinks[i]);				
-		
+			allFilteredLinks.push(dataLinks[i]);
 		
 		} else if(dataLinks[i].target == selectedNum) {		
 			// Check if any links have a matching target to the selection				
 			drawNodes = getDrawableNodes(drawNodes, dataNodes[dataLinks[i].source]);
 			drawLinks = getDrawableLinks(drawLinks, dataLinks[i]);
+			allFilteredLinks.push(dataLinks[i]);
 		}
 	}
 	
@@ -132,6 +135,13 @@ function rebuildNodes() {
 		if(drawLinks[i].count > highestNode.count) {
 			highestNode = drawLinks[i];
 		}
+	}
+	
+	for(var i in allFilteredLinks) {
+		var sourceNode = drawNodes.filter(function(n) { return n.id === allFilteredLinks[i].source; })[0],
+			targetNode = drawNodes.filter(function(n) { return n.id === allFilteredLinks[i].target; })[0];
+		allFilteredLinks[i].source = sourceNode;
+		allFilteredLinks[i].target = targetNode;
 	}
 	
 	// Redraw graph with new values
@@ -222,6 +232,8 @@ function buildGraph(filteredNodes, filteredLinks, hiddenNodes) {
 			.attr("cx", function(d) { return d.x = Math.max(radius*2, Math.min(width - radius*2, d.x)); })
 			.attr("cy", function(d) { return d.y = Math.max(radius*2, Math.min(height - radius*2, d.y)); });
 	}	
+	
+	buildCallGraph(filteredNodes, hiddenNodes);
 }
 
 function clickHandler(d, i) {
