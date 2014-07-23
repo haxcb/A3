@@ -70,6 +70,9 @@ function resetSlider(min, max) {
 
 function handleSlider(e, value) {
 	svg.html('');
+	d3.select('.timeline')
+		.html('')
+		.style('overflow', 'hidden');
 	var filteredCallFilteredLinks = [];
 	var filteredNodeLinks = [];
 	var hiddenNodes = [];
@@ -101,19 +104,33 @@ function rebuildNodes() {
 	allFilteredLinks = []; // Keep track of currently visible & connected calls (repeats included)
 	
 	drawNodes.push(dataNodes[selectedNum]);
-	
-	for(var i in dataLinks) {							
+
+	for(var i in dataLinks) {			
 		if(dataLinks[i].source == selectedNum) {	
 			// Check if any links have a matching source to the selection
 			drawNodes = getDrawableNodes(drawNodes, dataNodes[dataLinks[i].target]);
 			drawLinks = getDrawableLinks(drawLinks, dataLinks[i]);				
-			allFilteredLinks.push(dataLinks[i]);
+			allFilteredLinks.push({
+							'source': dataLinks[i].source, 
+							'target': dataLinks[i].target, 
+							'count': dataLinks[i].count,
+							'cellTower':dataLinks[i].cellTower, 
+							'duration':dataLinks[i].duration, 
+							'time':dataLinks[i].time
+			});
 		
 		} else if(dataLinks[i].target == selectedNum) {		
 			// Check if any links have a matching target to the selection				
 			drawNodes = getDrawableNodes(drawNodes, dataNodes[dataLinks[i].source]);
 			drawLinks = getDrawableLinks(drawLinks, dataLinks[i]);
-			allFilteredLinks.push(dataLinks[i]);
+			allFilteredLinks.push({
+							'source': dataLinks[i].source, 
+							'target': dataLinks[i].target, 
+							'count': dataLinks[i].count,
+							'cellTower':dataLinks[i].cellTower, 
+							'duration':dataLinks[i].duration, 
+							'time':dataLinks[i].time
+			});
 		}
 	}
 	

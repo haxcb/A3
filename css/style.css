@@ -77,3 +77,8 @@ input {
 	background:#FFB8C4;
 	border:1px solid #FF526F;
 }
+
+
+.timeline text {
+	font-size:12px;
+}

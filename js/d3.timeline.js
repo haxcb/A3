@@ -1,3 +1,7 @@
+/*  Modifications by Hasiba:
+		Added .elementMargin() method to allow each drawn element to be given a top margin for positioning
+		Modified background to start and end based on node positions
+*/
 // vim: ts=2 sw=2
 (function () {
   d3.timeline = function() {
@@ -11,6 +15,7 @@
         orient = "bottom",
         width = null,
         height = null,
+		elementMargin = 0,
         rowSeperatorsColor = null,
         backgroundColor = null,
         tickFormat = { format: d3.time.format("%I %p"),
@@ -128,8 +133,16 @@
             g.selectAll("svg").data(data).enter()
               .insert("rect")
               .attr("class", "row-green-bar")
-              .attr("x", 0 + margin.left)
-              .attr("width", width - margin.right - margin.left)
+              // .attr("x", 0 + margin.left)
+              // .attr("width", width - margin.right - margin.left)
+              .attr("x", function(d, i) { return getXPos(d, i);})
+              .attr("width", function(d, i) { 
+					if(i == 0) {
+						return getXPos(data[data.length-1], data.length-1) - getXPos(data[0], 0);
+					} else {
+						return 0;
+					}
+				})
               .attr("y", greenbarYAxis)
               .attr("height", itemHeight)
               .attr("fill", backgroundColor)
@@ -216,7 +229,7 @@
 
           function getStackPosition(d, i) {
             if (stacked) {
-              return margin.top + (itemHeight + itemMargin) * yAxisMapping[index];
+              return margin.top + (itemHeight + itemMargin) * yAxisMapping[index] + elementMargin;
             }
             return margin.top;
           }
@@ -348,6 +361,12 @@
     timeline.itemMargin = function (h) {
       if (!arguments.length) return itemMargin;
       itemMargin = h;
+      return timeline;
+    };
+	
+    timeline.elementMargin = function (h) {
+      if (!arguments.length) return elementMargin;
+      elementMargin = h;
       return timeline;
     };
 
