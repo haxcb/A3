@@ -56,12 +56,10 @@ function generateCallGraph() {
 	}	
 	timedNodes.splice(selectedIndex, 1);
 	
-	console.log(timedNodes);
-	
 	// Build chart
 	var chart = d3.timeline()
 		.stack()
-		.margin({left:70, right:30, top:0, bottom:0})
+		.margin({left:70, right:10, top:0, bottom:0})
 		.display("circle")
 		.elementMargin(5)
 		.colors(d3.scale.ordinal().range(['#FFA3A3','#FF5252']))
@@ -70,34 +68,46 @@ function generateCallGraph() {
 		.itemHeight(10)
 		.itemMargin(20)
 		.tickFormat({
-			format: d3.time.format("%x"),
+			format: d3.time.format("%b %e"),
 			tickTime: d3.time.hours,
 			tickInterval: 50,
 			tickSize: 6
 		})
 		.click(function (d, i, datum) {
 			alert(datum.label);
-		})
-		.scroll(function (x, scale) {
-			// $("#scrolled_date").text(scale.invert(x) + " to " + scale.invert(x+width));
 		});
-	
-	
 		  
+	// Set timeline width
 	var t = d3.select('.timeline')
 		.attr('width', 500);
+		
+	// Clear timeline	
 	t.html('');
+	
+	t.append('text')
+		.text('Phone #');
+	
+	t.append('text')
+		.text('Calls')
+		.attr("class", "calls");
+	
+	// Add svg to timeline with data
 	t.append("svg")
 		.attr("width", width)
 		.attr("height", 50+ 33*timedNodes.length)
 		.attr("display", "true")
 		.datum(timedNodes)
 		.call(chart);
+		
+	// Adjust stroke of circles
+	t.selectAll('circle')
+		.attr('stroke', gray);
 
 	// Stretch row lines to go all the way left
 	d3.selectAll('.row-seperator')
 		.attr('x1', 0);	
 }
+
 
 function buildTimedNodes(node) {
 	var end = addSeconds(node.time, node.duration);
@@ -145,35 +155,4 @@ function getMissingNodes(allItems, someItems) {
 		}
 	}
 	return missingItems;
-}
-
-
-function exampleGraph() {
-    var testData = [
-        {label: "person a", times: [{"starting_time": 1355752800000, "ending_time": 1355759900000}, {"starting_time": 1355767900000, "ending_time": 1355774400000}]},
-        {label: "person b", times: [{"starting_time": 1355759910000, "ending_time": 1355761900000}, ]},
-        {label: "person c", times: [{"starting_time": 1355761910000, "ending_time": 1355763910000}]},
-    ];
-	
-	var chart = d3.timeline()
-          .stack()
-          .margin({left:70, right:30, top:0, bottom:0})
-          .click(function (d, i, datum) {
-            alert(datum.label);
-          })
-          .scroll(function (x, scale) {
-            // $("#scrolled_date").text(scale.invert(x) + " to " + scale.invert(x+width));
-          });
-		  
-	var t = d3.select('.timeline')
-		.attr('width', 500)
-		.style('overflow', 'scroll')
-		.style('overflow-y', 'hidden');
-		
-	t.append("svg")
-		.attr("width", width * 4)
-		.attr("height", 150)
-		.attr("display", "true")
-		.datum(testData)
-		.call(chart);
 }

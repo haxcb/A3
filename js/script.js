@@ -5,6 +5,7 @@ var width = 800,
 var white = d3.rgb(255, 255, 255);
 var pink = d3.rgb(255, 145, 165);
 var gray = d3.rgb(222, 222, 222);
+var highlightColor = d3.rgb(78, 222, 161);
 
 var force = d3.layout.force()
 	.charge(-500)
@@ -44,6 +45,7 @@ function populateDropdown(vals) {
 
 function handleSelectedNumber() {
 	selectedNum = d3.event.target.value;
+	d3.select('.timeline').html('');
 	rebuildNodes();
 }
 
@@ -70,9 +72,7 @@ function resetSlider(min, max) {
 
 function handleSlider(e, value) {
 	svg.html('');
-	d3.select('.timeline')
-		.html('')
-		.style('overflow', 'hidden');
+	d3.select('.timeline').html('');
 	var filteredCallFilteredLinks = [];
 	var filteredNodeLinks = [];
 	var hiddenNodes = [];
@@ -256,6 +256,7 @@ function buildGraph(filteredNodes, filteredLinks, hiddenNodes) {
 function clickHandler(d, i) {
 	if(selectedNum != d.id) {
 		selectedNum = d.id;
+		d3.select('.timeline').html('');
 		rebuildNodes();
 	}
 }	
